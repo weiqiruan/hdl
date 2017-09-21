@@ -33,59 +33,87 @@
 // ***************************************************************************
 // ***************************************************************************
 
-module dmac_response_handler #(
+module dmac_reset_manager_tb;
+  parameter VCD_FILE = {`__FILE__,"cd"};
 
-  parameter ID_WIDTH = 3)(
+  `define TIMEOUT 1000000
+  `include "tb_base.v"
 
-  input clk,
-  input resetn,
 
-  input bvalid,
-  output bready,
-  input [1:0] bresp,
+  reg clk_a = 1'b0;
+  reg clk_b = 1'b0;
+  reg clk_c = 1'b0;
 
-  output reg [ID_WIDTH-1:0] id,
-  input [ID_WIDTH-1:0] request_id,
+  reg [5:0] resetn_shift = 'h0;
 
-  input enable,
-  output reg enabled,
+  reg [10:0] counter = 'h00;
 
-  input eot,
+  reg ctrl_enable = 1'b0;
+  reg ctrl_pause = 1'b0;
 
-  output resp_valid,
-  input resp_ready,
-  output resp_eot,
-  output [1:0] resp_resp
-);
+  always #10 clk_a <= ~clk_a;
+  always #3 clk_b <= ~clk_b;
+  always #7 clk_c <= ~clk_c;
 
-`include "resp.h"
-`include "inc_id.h"
+  always @(posedge clk_a) begin
+    counter <= counter + 1'b1;
+    if (counter == 'h60 || counter == 'h150 || counter == 'h185) begin
+      ctrl_enable <= 1'b1;
+    end else if (counter == 'h100 || counter == 'h110 || counter == 'h180) begin
+      ctrl_enable <= 1'b0;
+    end
 
-assign resp_resp = bresp;
-assign resp_eot = eot;
-
-wire active = id != request_id;
-
-assign bready = active && resp_ready;
-assign resp_valid = active && bvalid;
-
-// We have to wait for all responses before we can disable the response handler
-always @(posedge clk) begin
-  if (resetn == 1'b0) begin
-    enabled <= 1'b0;
-  end else if (enable == 1'b1) begin
-      enabled <= 1'b1;
-  end else if (request_id == id) begin
-      enabled <= 1'b0;
+    if (counter == 'h160) begin
+      ctrl_pause = 1'b1;
+    end else if (counter == 'h190) begin
+      ctrl_pause = 1'b0;
+    end
   end
-end
 
-always @(posedge clk) begin
-  if (resetn == 1'b0) begin
-    id <= 'h0;
-  end else if (bready == 1'b1 && bvalid == 1'b1) begin
-    id <= inc_id(id);
+  reg [15:0] req_enabled_shift;
+  wire req_enable;
+  wire req_enabled = req_enabled_shift[15];
+
+  reg [15:0] dest_enabled_shift;
+  wire dest_enable;
+  wire dest_enabled = dest_enabled_shift[15];
+
+  reg [15:0] src_enabled_shift;
+  wire src_enable;
+  wire src_enabled = src_enabled_shift[15];
+
+
+  always @(posedge clk_a) begin
+    req_enabled_shift <= {req_enabled_shift[14:0],req_enable};
   end
-end
+
+  always @(posedge clk_b) begin
+    dest_enabled_shift <= {dest_enabled_shift[14:0],dest_enable};
+  end
+
+  always @(posedge clk_c) begin
+    src_enabled_shift <= {src_enabled_shift[14:0],src_enable};
+  end
+
+  dmac_reset_manager i_reset_manager (
+    .clk(clk_a),
+    .resetn(resetn),
+
+    .ctrl_pause(ctrl_pause),
+    .ctrl_enable(ctrl_enable),
+
+    .req_enable(req_enable),
+    .req_enabled(req_enabled),
+
+    .dest_clk(clk_b),
+    .dest_ext_resetn(1'b0),
+    .dest_enable(dest_enable),
+    .dest_enabled(dest_enabled),
+
+    .src_clk(clk_c),
+    .src_ext_resetn(1'b0),
+    .src_enable(src_enable),
+    .src_enabled(src_enabled)
+  );
 
 endmodule
