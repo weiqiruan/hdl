@@ -3,9 +3,9 @@
 ## Auto-generated, do not modify!
 ####################################################################################
 
-PROJECT_NAME := ad400x_zed
+PROJECT_NAME := ad40xx_zed
 
-M_DEPS += ../common/ad400x_bd.tcl
+M_DEPS += ../common/ad40xx_bd.tcl
 M_DEPS += ../../common/zed/zed_system_constr.xdc
 M_DEPS += ../../common/zed/zed_system_bd.tcl
 M_DEPS += ../../../library/xilinx/common/ad_iobuf.v
