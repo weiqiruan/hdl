@@ -68,7 +68,7 @@ module axi_hdmi_tx_core #(
 
   // control signals
 
-  output  reg             hdmi_fs_toggle,
+  output  reg             hdmi_fs_toggle = 1'b0,
   output  reg [ 8:0]      hdmi_raddr_g,
   output  reg             hdmi_tpm_oos,
   output  reg             hdmi_status,
