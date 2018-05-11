@@ -65,21 +65,21 @@ module axi_hdmi_tx_vdma (
 
   // internal registers
 
-  reg             vdma_fs_toggle_m1 = 'd0;
-  reg             vdma_fs_toggle_m2 = 'd0;
-  reg             vdma_fs_toggle_m3 = 'd0;
-  reg     [22:0]  vdma_tpm_data = 'd0;
-  reg     [ 8:0]  vdma_raddr_g_m1 = 'd0;
-  reg     [ 8:0]  vdma_raddr_g_m2 = 'd0;
-  reg     [ 8:0]  vdma_raddr = 'd0;
-  reg     [ 8:0]  vdma_addr_diff = 'd0;
-  reg             vdma_almost_full = 'd0;
-  reg             vdma_almost_empty = 'd0;
-  reg             hdmi_fs = 'd0;
-  reg             vdma_fs = 'd0;
-  reg             vdma_end_of_frame_d = 'd0;
-  reg             vdma_active_frame = 'd0;
-  reg             vdma_drop_frame = 'd0;
+  reg             vdma_fs_toggle_m1 = 1'd0;
+  reg             vdma_fs_toggle_m2 = 1'd0;
+  reg             vdma_fs_toggle_m3 = 1'd0;
+  reg     [22:0]  vdma_tpm_data = 23'd0;
+  reg     [ 8:0]  vdma_raddr_g_m1 = 9'd0;
+  reg     [ 8:0]  vdma_raddr_g_m2 = 9'd0;
+  reg     [ 8:0]  vdma_raddr = 9'd0;
+  reg     [ 8:0]  vdma_addr_diff = 9'd0;
+  reg             vdma_almost_full = 1'd0;
+  reg             vdma_almost_empty = 1'd0;
+  reg             hdmi_fs = 1'd0;
+  reg             vdma_fs = 1'd0;
+  reg             vdma_end_of_frame_d = 1'd0;
+  reg             vdma_active_frame = 1'd0;
+  reg             vdma_drop_frame = 1'd0;
 
   // internal wires
 
@@ -112,9 +112,9 @@ module axi_hdmi_tx_vdma (
 
   always @(posedge vdma_clk or posedge vdma_rst) begin
     if (vdma_rst == 1'b1) begin
-      vdma_fs_toggle_m1 <= 'd0;
-      vdma_fs_toggle_m2 <= 'd0;
-      vdma_fs_toggle_m3 <= 'd0;
+      vdma_fs_toggle_m1 <= 1'd0;
+      vdma_fs_toggle_m2 <= 1'd0;
+      vdma_fs_toggle_m3 <= 1'd0;
     end else begin
       vdma_fs_toggle_m1 <= hdmi_fs_toggle;
       vdma_fs_toggle_m2 <= vdma_fs_toggle_m1;
