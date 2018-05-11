@@ -53,6 +53,7 @@ module dmac_2d_transfer #(
   input [DMA_LENGTH_WIDTH-1:0] req_src_stride,
   input req_sync_transfer_start,
   output reg req_eot,
+  input req_xlast,
 
   output reg out_req_valid,
   input out_req_ready,
@@ -60,7 +61,8 @@ module dmac_2d_transfer #(
   output [31:BYTES_PER_BEAT_WIDTH_SRC] out_req_src_address,
   output [DMA_LENGTH_WIDTH-1:0] out_req_length,
   output reg out_req_sync_transfer_start,
-  input out_eot
+  input out_eot,
+  output reg out_xlast
 );
 
 reg [31:BYTES_PER_BEAT_WIDTH_DEST] dest_address;
@@ -73,6 +75,7 @@ reg [DMA_LENGTH_WIDTH-1:0] src_stride;
 reg [1:0] req_id;
 reg [1:0] eot_id;
 reg [3:0] last_req;
+reg       xlast;
 
 assign out_req_dest_address = dest_address;
 assign out_req_src_address = src_address;
@@ -121,6 +124,12 @@ begin
         out_req_sync_transfer_start <= req_sync_transfer_start;
         req_ready <= 1'b0;
         out_req_valid <= 1'b1;
+        if (req_y_length == 'h00)
+          out_xlast <= req_xlast;
+        else begin
+          out_xlast <= 1'b0;
+          xlast <= req_xlast;
+        end
       end
     end else begin
       if (out_req_valid && out_req_ready) begin
@@ -131,6 +140,11 @@ begin
         if (y_length == 0) begin
           out_req_valid <= 1'b0;
           req_ready <= 1'b1;
+        end
+        if (y_length == 1) begin
+          out_xlast <= xlast;
+        end else begin
+          out_xlast <= 1'b0;
         end
       end
     end

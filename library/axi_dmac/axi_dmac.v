@@ -438,6 +438,7 @@ dmac_2d_transfer #(
   .req_dest_stride(up_dma_req_dest_stride),
   .req_src_stride(up_dma_req_src_stride),
   .req_sync_transfer_start(up_dma_req_sync_transfer_start),
+  .req_xlast (up_dma_req_last),
 
   .out_req_valid(dma_req_valid),
   .out_req_ready(dma_req_ready),
@@ -445,10 +446,9 @@ dmac_2d_transfer #(
   .out_req_src_address(dma_req_src_address),
   .out_req_length(dma_req_length),
   .out_req_sync_transfer_start(dma_req_sync_transfer_start),
-  .out_eot(dma_req_eot)
+  .out_eot(dma_req_eot),
+  .out_xlast (dma_req_last)
 );
-
-assign dma_req_last = 1'b0;
 
 end else begin
 
