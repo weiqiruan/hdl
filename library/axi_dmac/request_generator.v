@@ -71,21 +71,25 @@ assign request_id = id;
 
 always @(posedge clk)
 begin
+  if (req_ready == 1'b1) begin
+    burst_count <= req_burst_count;
+  end else if (response_id != id_next && enable == 1'b1) begin
+    burst_count <= burst_count - 1'b1;
+  end
+end
+
+always @(posedge clk)
+begin
   if (resetn == 1'b0) begin
-    burst_count <= 'h00;
     id <= 'h0;
     req_ready <= 1'b1;
-  end else begin
-    if (req_ready == 1'b1) begin
-      burst_count <= req_burst_count;
-      req_ready <= ~req_valid;
-    end else if (response_id != id_next && enable == 1'b1) begin
-      if (eot == 1'b1) begin
-        req_ready <= 1'b1;
-      end
-      burst_count <= burst_count - 1'b1;
-      id <= id_next;
+  end else if (req_ready == 1'b1) begin
+    req_ready <= ~req_valid;
+  end else if (response_id != id_next && enable == 1'b1) begin
+    if (eot == 1'b1) begin
+      req_ready <= 1'b1;
     end
+    id <= id_next;
   end
 end
 
