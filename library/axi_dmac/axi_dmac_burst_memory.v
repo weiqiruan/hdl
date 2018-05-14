@@ -44,9 +44,10 @@ module axi_dmac_burst_memory #(
   input src_reset,
 
   input src_data_valid,
-  output src_data_ready,
   input [DATA_WIDTH_SRC-1:0] src_data,
   input src_data_last,
+
+  output [ID_WIDTH-1:0] src_data_request_id,
 
   input dest_clk,
   input dest_reset,
@@ -122,7 +123,6 @@ reg [BURST_LEN_WIDTH-1:0] burst_len_mem[0:2**(ID_WIDTH-1)-1];
 assign src_id_reduced = {src_id_reduced_msb,src_id[ID_WIDTH-3:0]};
 
 wire src_mem_data_valid;
-reg src_mem_data_ready;
 wire src_mem_data_last;
 wire [DATA_WIDTH-1:0] src_mem_data;
 
@@ -131,8 +131,9 @@ reg dest_mem_data_valid = 1'b0;
 reg dest_mem_data_last = 1'b0;
 reg [DATA_WIDTH-1:0] dest_mem_data = 'h0;
 
-assign src_beat = src_mem_data_valid & src_mem_data_ready;
+assign src_beat = src_mem_data_valid;
 assign src_last_beat = src_beat & src_mem_data_last;
+
 assign src_waddr = {src_id_reduced,src_beat_counter};
 
 axi_dmac_resize_src #(
@@ -142,12 +143,10 @@ axi_dmac_resize_src #(
   .clk (src_clk),
   .reset (src_reset),
   .src_data_valid(src_data_valid),
-  .src_data_ready(src_data_ready),
   .src_data (src_data),
   .src_data_last (src_data_last),
 
   .mem_data_valid(src_mem_data_valid),
-  .mem_data_ready(src_mem_data_ready),
   .mem_data (src_mem_data),
   .mem_data_last (src_mem_data_last)
 );
@@ -160,12 +159,7 @@ always @(*) begin
   end
 end
 
-always @(posedge src_clk) begin
-  /* Ready if there is room for at least one full burst. */
-  src_mem_data_ready <= (src_id_next[ID_WIDTH-1] == src_dest_id[ID_WIDTH-1] ||
-                src_id_next[ID_WIDTH-2] == src_dest_id[ID_WIDTH-2] ||
-                src_id_next[ID_WIDTH-3:0] != src_dest_id[ID_WIDTH-3:0]);
-end
+assign src_data_request_id = src_dest_id;
 
 always @(posedge src_clk) begin
   if (src_reset == 1'b1) begin
