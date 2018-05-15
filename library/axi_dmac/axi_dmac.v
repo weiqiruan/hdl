@@ -33,6 +33,8 @@
 // ***************************************************************************
 // ***************************************************************************
 
+`define AXI_DMAC_FIFO_ADDR_WIDTH ($clog2(MAX_BYTES_PER_BURST / ((DMA_DATA_WIDTH_SRC < DMA_DATA_WIDTH_DEST ? DMA_DATA_WIDTH_DEST : DMA_DATA_WIDTH_SRC)/ 8) * FIFO_SIZE))
+
 module axi_dmac #(
 
   parameter ID = 0,
@@ -56,7 +58,9 @@ module axi_dmac #(
   parameter FIFO_SIZE = 4, // In bursts
   parameter AXI_ID_WIDTH_SRC = 4,
   parameter AXI_ID_WIDTH_DEST = 4,
-  parameter DISABLE_DEBUG_REGISTERS = 0)(
+  parameter DISABLE_DEBUG_REGISTERS = 0,
+  parameter ENABLE_DIAGNOSTIC_PORT = 0
+ )(
   // Slave AXI interface
   input s_axi_aclk,
   input s_axi_aresetn,
@@ -211,9 +215,11 @@ module axi_dmac #(
   output                                   fifo_rd_valid,
   output [DMA_DATA_WIDTH_DEST-1:0]         fifo_rd_dout,
   output                                   fifo_rd_underflow,
-  output                                   fifo_rd_xfer_req
-);
+  output                                   fifo_rd_xfer_req,
 
+  // Diagnostics port
+  output [`AXI_DMAC_FIFO_ADDR_WIDTH:0] dest_diag_fifo_level
+);
 
 localparam DMA_TYPE_AXI_MM = 0;
 localparam DMA_TYPE_AXI_STREAM = 1;
@@ -481,7 +487,8 @@ dmac_request_arb #(
   .FIFO_SIZE(FIFO_SIZE),
   .ID_WIDTH(ID_WIDTH),
   .AXI_LENGTH_WIDTH_SRC(8-(4*DMA_AXI_PROTOCOL_SRC)),
-  .AXI_LENGTH_WIDTH_DEST(8-(4*DMA_AXI_PROTOCOL_DEST))
+  .AXI_LENGTH_WIDTH_DEST(8-(4*DMA_AXI_PROTOCOL_DEST)),
+  .AXI_DMAC_FIFO_ADDR_WIDTH(`AXI_DMAC_FIFO_ADDR_WIDTH)
 ) i_request_arb (
   .req_aclk(s_axi_aclk),
   .req_aresetn(s_axi_aresetn),
@@ -575,7 +582,8 @@ dmac_request_arb #(
   .dbg_src_address_id(src_address_id),
   .dbg_src_data_id(src_data_id),
   .dbg_src_response_id(src_response_id),
-  .dbg_status(dbg_status)
+  .dbg_status(dbg_status),
+  .dest_diag_fifo_level(dest_diag_fifo_level)
 );
 
 assign m_dest_axi_arvalid = 1'b0;

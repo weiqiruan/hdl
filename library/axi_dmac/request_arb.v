@@ -52,7 +52,8 @@ module dmac_request_arb #(
   parameter FIFO_SIZE = 4,
   parameter ID_WIDTH = $clog2(FIFO_SIZE*2),
   parameter AXI_LENGTH_WIDTH_SRC = 8,
-  parameter AXI_LENGTH_WIDTH_DEST = 8)(
+  parameter AXI_LENGTH_WIDTH_DEST = 8,
+  parameter AXI_DMAC_FIFO_ADDR_WIDTH = 6)(
 
   input req_aclk,
   input req_aresetn,
@@ -155,7 +156,8 @@ module dmac_request_arb #(
   output [ID_WIDTH-1:0]               dbg_src_address_id,
   output [ID_WIDTH-1:0]               dbg_src_data_id,
   output [ID_WIDTH-1:0]               dbg_src_response_id,
-  output [7:0]                        dbg_status
+  output [7:0]                        dbg_status,
+  output [AXI_DMAC_FIFO_ADDR_WIDTH:0] dest_diag_fifo_level
 );
 
 localparam DMA_TYPE_MM_AXI = 0;
@@ -850,7 +852,7 @@ util_axis_resize #(
 
 util_axis_fifo #(
   .DATA_WIDTH(DMA_DATA_WIDTH),
-  .ADDRESS_WIDTH($clog2(MAX_BYTES_PER_BURST / (DMA_DATA_WIDTH / 8) * FIFO_SIZE)),
+  .ADDRESS_WIDTH(AXI_DMAC_FIFO_ADDR_WIDTH),
   .ASYNC_CLK(ASYNC_CLK_SRC_DEST)
 ) i_fifo (
   .s_axis_aclk(src_clk),
@@ -866,7 +868,7 @@ util_axis_fifo #(
   .m_axis_valid(dest_fifo_valid),
   .m_axis_ready(dest_fifo_ready),
   .m_axis_data(dest_fifo_data),
-  .m_axis_level()
+  .m_axis_level(dest_diag_fifo_level)
 );
 
 util_axis_resize #(

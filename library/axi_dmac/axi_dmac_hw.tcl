@@ -440,9 +440,24 @@ proc axi_dmac_elaborate {} {
     set_port_property fifo_wr_sync termination_value 1
   }
 
+  if {[get_parameter_value ENABLE_DIAGNOSTIC_PORT] != 1} {
+    lappend disabled_intfs diag_if
+  }
+
   foreach intf $disabled_intfs {
     set_interface_property $intf ENABLED false
   }
+
+  set DMA_DATA_WIDTH_SRC [get_parameter_value DMA_DATA_WIDTH_SRC]
+  set DMA_DATA_WIDTH_DEST [get_parameter_value DMA_DATA_WIDTH_DEST]
+  set MAX_BYTES_PER_BURST [get_parameter_value MAX_BYTES_PER_BURST]
+  set FIFO_SIZE [get_parameter_value FIFO_SIZE]
+
+  set FIFO_DATA_WIDTH [expr max($DMA_DATA_WIDTH_SRC, $DMA_DATA_WIDTH_DEST)]
+  set NUM_LOCATIONS [expr {$MAX_BYTES_PER_BURST/( $FIFO_DATA_WIDTH / 8) * $FIFO_SIZE}]
+  set ADDR_W [expr {(log($NUM_LOCATIONS)/log(2))+1}]
+  set_port_property dest_diag_fifo_level WIDTH_EXPR [expr {int($ADDR_W)}]
+
 }
 
 set group "Debug"
@@ -452,3 +467,13 @@ set_parameter_property DISABLE_DEBUG_REGISTERS DISPLAY_NAME "Disable debug regis
 set_parameter_property DISABLE_DEBUG_REGISTERS DISPLAY_HINT boolean
 set_parameter_property DISABLE_DEBUG_REGISTERS HDL_PARAMETER false
 set_parameter_property DISABLE_DEBUG_REGISTERS GROUP $group
+
+add_parameter ENABLE_DIAGNOSTIC_PORT INTEGER 0
+set_parameter_property ENABLE_DIAGNOSTIC_PORT DISPLAY_NAME "Enable Diagnostic Port"
+set_parameter_property ENABLE_DIAGNOSTIC_PORT DISPLAY_HINT boolean
+set_parameter_property ENABLE_DIAGNOSTIC_PORT HDL_PARAMETER true
+set_parameter_property ENABLE_DIAGNOSTIC_PORT GROUP $group
+
+add_interface diag_if conduit end
+add_interface_port diag_if dest_diag_fifo_level dest_diag_fifo_level Output "32"
+
