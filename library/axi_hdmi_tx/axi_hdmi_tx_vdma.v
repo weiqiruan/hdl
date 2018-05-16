@@ -78,8 +78,9 @@ module axi_hdmi_tx_vdma (
   reg             hdmi_fs = 1'd0;
   reg             vdma_fs = 1'd0;
   reg             vdma_end_of_frame_d = 1'd0;
+  reg             vdma_frame_ready = 1'd0;
   reg             vdma_active_frame = 1'd0;
-  reg             vdma_drop_frame = 1'd0;
+
 
   // internal wires
 
@@ -145,9 +146,6 @@ module axi_hdmi_tx_vdma (
       if (vdma_fs) begin
         vdma_fs_ret_toggle <= ~vdma_fs_ret_toggle;
         vdma_fs_waddr <= vdma_waddr ;
-      end else begin
-        vdma_fs_waddr <= vdma_fs_waddr;
-        vdma_fs_ret_toggle <= vdma_fs_ret_toggle;
       end
     end
   end
@@ -158,23 +156,18 @@ module axi_hdmi_tx_vdma (
     if (vdma_rst == 1'b1) begin
       vdma_active_frame <= 1'b0;
     end else begin
-        if ((hdmi_fs && vdma_active_frame) || (vdma_unf && vdma_active_frame)) begin
-          vdma_drop_frame <= 1'b1;
-        end
-
-        if (hdmi_fs == 1'b1) begin
-          vdma_active_frame <= 1'b1;
-        end else if (vdma_end_of_frame == 1'b1) begin
-          vdma_active_frame <= 1'b0;
-          vdma_drop_frame <= 1'b0;
-        end
+      if ((vdma_active_frame == 1'b1) && (vdma_end_of_frame == 1'b1)) begin
+        vdma_active_frame <= 1'b0;
+      end else if ((vdma_active_frame == 1'b0) && (hdmi_fs == 1'b1)) begin
+        vdma_active_frame <= 1'b1;
+      end
     end
   end
 
   // vdma write
 
   always @(posedge vdma_clk) begin
-    vdma_wr <= vdma_valid & vdma_ready & ~vdma_drop_frame;
+    vdma_wr <= vdma_valid & vdma_ready;
     if (vdma_rst == 1'b1) begin
       vdma_waddr <= 9'd0;
     end else if (vdma_wr == 1'b1) begin
@@ -220,7 +213,7 @@ module axi_hdmi_tx_vdma (
     if (vdma_addr_diff >= RDY_THRESHOLD_HI) begin
       vdma_ready <= 1'b0;
     end else if (vdma_addr_diff <= RDY_THRESHOLD_LO) begin
-      vdma_ready <= vdma_active_frame | vdma_drop_frame;
+      vdma_ready <= vdma_active_frame;
     end
     if (vdma_addr_diff > BUF_THRESHOLD_HI) begin
       vdma_almost_full <= 1'b1;
