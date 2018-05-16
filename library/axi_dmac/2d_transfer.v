@@ -112,6 +112,8 @@ begin
     req_ready <= 1'b1;
     out_req_valid <= 1'b0;
     out_req_sync_transfer_start <= 1'b0;
+    out_xlast <= 1'b0;
+    xlast <= 1'b0;
   end else begin
     if (req_ready) begin
       if (req_valid) begin
@@ -124,11 +126,11 @@ begin
         out_req_sync_transfer_start <= req_sync_transfer_start;
         req_ready <= 1'b0;
         out_req_valid <= 1'b1;
+        xlast <= req_xlast;
         if (req_y_length == 'h00)
           out_xlast <= req_xlast;
         else begin
           out_xlast <= 1'b0;
-          xlast <= req_xlast;
         end
       end
     end else begin
