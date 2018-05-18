@@ -279,20 +279,8 @@ set_instance_parameter_value video_dmac {FIFO_SIZE} {4}
 set_instance_parameter_value video_dmac {ID} {0}
 set_instance_parameter_value video_dmac {SYNC_TRANSFER_START} {0}
 
-add_interface axi_dmac_0_if_m_axis_data conduit end
-set_interface_property axi_dmac_0_if_m_axis_data EXPORT_OF video_dmac.if_m_axis_data
-add_interface axi_dmac_0_if_m_axis_ready conduit end
-set_interface_property axi_dmac_0_if_m_axis_ready EXPORT_OF video_dmac.if_m_axis_ready
-add_interface axi_dmac_0_if_m_axis_valid conduit end
-set_interface_property axi_dmac_0_if_m_axis_valid EXPORT_OF video_dmac.if_m_axis_valid
 add_interface axi_hdmi_tx_0_hdmi_if conduit end
 set_interface_property axi_hdmi_tx_0_hdmi_if EXPORT_OF axi_hdmi_tx_0.hdmi_if
-add_interface axi_hdmi_tx_0_if_vdma_fs conduit end
-set_interface_property axi_hdmi_tx_0_if_vdma_fs EXPORT_OF axi_hdmi_tx_0.if_vdma_fs
-add_interface axi_hdmi_tx_0_if_vdma_fs_ret conduit end
-set_interface_property axi_hdmi_tx_0_if_vdma_fs_ret EXPORT_OF axi_hdmi_tx_0.if_vdma_fs_ret
-add_interface axi_hdmi_tx_0_vdma_if avalon_streaming sink
-set_interface_property axi_hdmi_tx_0_vdma_if EXPORT_OF axi_hdmi_tx_0.vdma_if
 
 add_connection pixel_clk_pll.outclk0 axi_hdmi_tx_0.hdmi_clock
 
@@ -340,6 +328,11 @@ add_connection video_dmac.m_src_axi sys_hps.f2h_axi_slave
 set_connection_parameter_value video_dmac.m_src_axi/sys_hps.f2h_axi_slave arbitrationPriority {1}
 set_connection_parameter_value video_dmac.m_src_axi/sys_hps.f2h_axi_slave baseAddress {0x0000}
 set_connection_parameter_value video_dmac.m_src_axi/sys_hps.f2h_axi_slave defaultConnection {0}
+
+add_connection  axi_hdmi_tx_0.if_vdma_end_of_frame video_dmac.if_m_axis_last
+add_connection  axi_hdmi_tx_0.if_vdma_ready video_dmac.if_m_axis_ready
+add_connection  axi_hdmi_tx_0.if_vdma_valid video_dmac.if_m_axis_valid
+add_connection  axi_hdmi_tx_0.if_vdma_data video_dmac.if_m_axis_data
 
 add_interface sys_hps_i2c3 conduit end
 set_interface_property sys_hps_i2c3 EXPORT_OF sys_hps.i2c3
