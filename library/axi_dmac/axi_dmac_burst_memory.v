@@ -54,8 +54,11 @@ module axi_dmac_burst_memory #(
   output dest_data_valid,
   input dest_data_ready,
   output [DATA_WIDTH_DEST-1:0] dest_data,
+  output dest_data_last,
 
-  output [ID_WIDTH-1:0] dest_request_id
+  output [ID_WIDTH-1:0] dest_request_id,
+  input [ID_WIDTH-1:0] dest_data_request_id,
+  output [ID_WIDTH-1:0] dest_data_response_id
 );
 
 localparam DATA_WIDTH = DATA_WIDTH_SRC > DATA_WIDTH_DEST ?
@@ -209,7 +212,7 @@ assign dest_burst_ready = ~dest_valid | dest_last_beat;
 always @(posedge dest_clk) begin
   if (dest_reset == 1'b1) begin
     dest_valid <= 1'b0;
-  end else if (dest_src_id != dest_id_next) begin
+  end else if (dest_data_request_id != dest_id_next) begin
     dest_valid <= 1'b1;
   end else if (dest_last_beat == 1'b1) begin
     dest_valid <= 1'b0;
@@ -226,13 +229,32 @@ always @(posedge dest_clk) begin
   end
 end
 
+/*
+ * This clears dest_data_last after the last beat. Strictly speaking this is not
+ * necessary if this followed AXI handshaking rules since dest_data_last would
+ * be qualified by dest_data_valid and it is OK to retain the previous value of
+ * dest_data_last when dest_data_valid is not asserted. But clearing the signal
+ * here doesn't cost much and can simplify some of the more congested
+ * combinatorical logic further up the pipeline since we can assume that
+ * fifo_last == 1'b1 implies fifo_valid == 1'b1.
+ */
+always @(posedge dest_clk) begin
+  if (dest_reset == 1'b1) begin
+    dest_mem_data_last <= 1'b0;
+  end else if (dest_beat == 1'b1) begin
+    dest_mem_data_last <= dest_last;
+  end else if (dest_mem_data_ready == 1'b1) begin
+    dest_mem_data_last <= 1'b0;
+  end
+end
+
 assign dest_id_next_inc = inc_id(dest_id_next);
 
 always @(posedge dest_clk) begin
   if (dest_reset == 1'b1) begin
     dest_id_next <= 'h00;
     dest_id_reduced_msb_next <= 1'b0;
-  end else if (dest_src_id != dest_id_next &&
+  end else if (dest_data_request_id != dest_id_next &&
                dest_burst_ready == 1'b1) begin
     dest_id_next <= dest_id_next_inc;
     dest_id_reduced_msb_next <= ^dest_id_next_inc[ID_WIDTH-1-:2];
@@ -305,5 +327,6 @@ sync_bits #(
 );
 
 assign dest_request_id = dest_src_id;
+assign dest_data_response_id = dest_id;
 
 endmodule
