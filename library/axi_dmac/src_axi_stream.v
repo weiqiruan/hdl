@@ -47,6 +47,7 @@ module dmac_src_axi_stream #(
   output enabled,
 
   input [ID_WIDTH-1:0] request_id,
+  output [ID_WIDTH-1:0] eot_id,
   output [ID_WIDTH-1:0] response_id,
   input eot,
 
@@ -82,6 +83,7 @@ dmac_data_mover # (
   .xfer_req(s_axis_xfer_req),
 
   .request_id(request_id),
+  .eot_id(eot_id),
   .response_id(response_id),
   .eot(eot),
 

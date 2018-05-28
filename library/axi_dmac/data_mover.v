@@ -44,6 +44,7 @@ module dmac_data_mover #(
   input resetn,
 
   input [ID_WIDTH-1:0] request_id,
+  output [ID_WIDTH-1:0] eot_id,
   output [ID_WIDTH-1:0] response_id,
   input eot,
 
@@ -79,6 +80,7 @@ reg pending_burst = 1'b0;
 reg active = 1'b0;
 reg last_eot = 1'b0;
 reg last_non_eot = 1'b0;
+reg eot_r = 1'b0;
 
 reg needs_sync = 1'b0;
 wire has_sync = ~needs_sync | s_axi_sync;
@@ -92,11 +94,12 @@ wire last;
 assign xfer_req = active;
 
 assign response_id = id;
+assign eot_id = id_next;
 
-assign last = eot ? last_eot : last_non_eot;
+assign last = eot_r ? last_eot : last_non_eot;
 
-assign s_axi_ready = (pending_burst & active) & ~transfer_abort_s;
-assign m_axi_valid = (s_axi_sync_valid | transfer_abort_s) & pending_burst & active;
+assign s_axi_ready = pending_active & ~transfer_abort_s;
+assign m_axi_valid = (s_axi_sync_valid | transfer_abort_s) & pending_active;
 assign m_axi_data = transfer_abort_s == 1'b1 ? {DATA_WIDTH{1'b0}} : s_axi_data;
 assign m_axi_last = last;
 
@@ -114,7 +117,7 @@ generate if (ALLOW_ABORT == 1) begin
     if (resetn == 1'b0) begin
       transfer_abort <= 1'b0;
     end else if (m_axi_valid == 1'b1) begin
-      if (last == 1'b1 && eot == 1'b1 && req_xlast_d == 1'b1) begin
+      if (last == 1'b1 && eot_r == 1'b1 && req_xlast_d == 1'b1) begin
         transfer_abort <= 1'b0;
       end else if (s_axi_last == 1'b1) begin
         transfer_abort <= 1'b1;
@@ -148,7 +151,7 @@ end
 
 // If we want to support zero delay between transfers we have to assert
 // req_ready on the same cycle on which the last load happens.
-assign last_load = m_axi_valid && last_eot && eot;
+assign last_load = m_axi_valid && last_eot && eot_r;
 assign req_ready = last_load || ~active;
 
 always @(posedge clk) begin
@@ -168,34 +171,79 @@ always @(posedge clk) begin
     last_burst_length <= req_last_burst_length;
 end
 
+reg active_next;
+reg pending_burst_next;
+
+reg pending_active = 1'b0;
+
 always @(posedge clk) begin
   if (resetn == 1'b0) begin
-    active <= 1'b0;
-  end else if (req_valid == 1'b1) begin
-    active <= 1'b1;
-  end else if (last_load == 1'b1) begin
-    active <= 1'b0;
+    pending_active <= 1'b0;
+  end else begin
+    pending_active <= active_next & pending_burst_next;
   end
 end
 
-always @(*)
-begin
-  if (m_axi_valid == 1'b1 && last == 1'b1)
-    id_next <= inc_id(id);
-  else
-    id_next <= id;
+always @(*) begin
+  if (req_valid == 1'b1) begin
+    active_next <= 1'b1;
+  end else if (last_load == 1'b1) begin
+    active_next <= 1'b0;
+  end else begin
+    active_next <= active;
+  end
+end
+
+always @(posedge clk) begin
+  if (resetn == 1'b0) begin
+    active <= 1'b0;
+  end else begin
+    active <= active_next;
+  end
+end
+
+wire m_axi_last_beat = m_axi_valid & last;
+wire burst_ready = ~pending_burst | m_axi_last_beat;
+wire burst_valid = id_next != request_id;
+
+always @(posedge clk) begin
+  if (resetn == 1'b0) begin
+    id_next <= 'h0;
+  end else if (burst_ready == 1'b1 && burst_valid == 1'b1) begin
+    id_next <= inc_id(id_next);
+  end
 end
 
 always @(posedge clk) begin
   if (resetn == 1'b0) begin
     id <= 'h0;
-  end else begin
+  end else if (m_axi_last_beat == 1'b1) begin
     id <= id_next;
   end
 end
 
 always @(posedge clk) begin
-  pending_burst <= id_next != request_id;
+  if (burst_ready == 1'b1) begin
+    eot_r <= eot;
+  end
+end
+
+always @(*) begin
+  if (burst_valid == 1'b1) begin
+    pending_burst_next <= 1'b1;
+  end else if (m_axi_last_beat == 1'b1) begin
+    pending_burst_next <= 1'b0;
+  end else begin
+    pending_burst_next <= pending_burst;
+  end
+end
+
+always @(posedge clk) begin
+  if (resetn == 1'b0) begin
+    pending_burst <= 1'b0;
+  end else begin
+    pending_burst <= pending_burst_next;
+  end
 end
 
 endmodule

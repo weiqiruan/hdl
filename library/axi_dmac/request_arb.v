@@ -577,7 +577,9 @@ if (DMA_TYPE_SRC == DMA_TYPE_STREAM_AXI) begin
 assign src_clk = s_axis_aclk;
 assign src_ext_resetn = 1'b1;
 
-wire src_eot = eot_mem[src_response_id];
+wire [ID_WIDTH-1:0] src_eot_id;
+
+wire src_eot = eot_mem[src_eot_id];
 
 assign dbg_src_address_id = 'h00;
 assign dbg_src_data_id = 'h00;
@@ -605,6 +607,7 @@ dmac_src_axi_stream #(
   .req_xlast(src_req_xlast),
 
   .request_id(src_throttled_request_id),
+  .eot_id(src_eot_id),
   .response_id(src_response_id),
 
   .eot(src_eot),
@@ -633,7 +636,9 @@ if (DMA_TYPE_SRC == DMA_TYPE_FIFO) begin
 assign src_clk = fifo_wr_clk;
 assign src_ext_resetn = 1'b1;
 
-wire src_eot = eot_mem[src_response_id];
+wire [ID_WIDTH-1:0] src_eot_id;
+
+wire src_eot = eot_mem[src_eot_id];
 
 assign dbg_src_address_id = 'h00;
 assign dbg_src_data_id = 'h00;
@@ -660,6 +665,7 @@ dmac_src_fifo_inf #(
   .req_sync_transfer_start(src_req_sync_transfer_start),
 
   .request_id(src_throttled_request_id),
+  .eot_id(src_eot_id),
   .response_id(src_response_id),
 
   .eot(src_eot),
